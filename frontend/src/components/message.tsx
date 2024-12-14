@@ -1,6 +1,7 @@
 "use client";
 
 import { User, Bot, TextCursor } from "lucide-react";
+import Markdown from "react-markdown";
 
 type MessageType = {
   message: string | undefined;
@@ -71,7 +72,7 @@ function MessageBox({ message, role, isLoading }: MessageBoxType) {
                   {isLoading || message == undefined ? (
                     <TextCursor className="h-6 w-6 animate-pulse" />
                   ) : (
-                    <p>{message}</p>
+                    <Markdown>{message}</Markdown>
                   )}
                 </div>
               </div>

@@ -4,6 +4,7 @@ import { hasCookie } from "cookies-next";
 import React, {
   ChangeEvent,
   MouseEvent,
+  KeyboardEvent,
   useCallback,
   useState,
   useRef,
@@ -42,13 +43,13 @@ export default function Home() {
   const currentMessageRef = useRef("");
   const latestChatId = () => crypto.randomUUID();
   const [openDialog, setOpenDialog] = useState<boolean>(false);
+  
+  // if(!hasCookie("session")){
+  //   redirect("/auth/signIn"
+  //   )
+  // }
 
-  if(!hasCookie("session")){
-    redirect("/auth/signIn"
-    )
-  }
-
-  const sendUserQuery = (e: MouseEvent<HTMLButtonElement>) => {
+  const sendUserQuery = (e: KeyboardEvent<HTMLTextAreaElement> | MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
     /*
@@ -77,7 +78,7 @@ export default function Home() {
     setTextBoxInput("");
 
     try {
-      fetch("http://localhost:11434/api/generate", {
+      fetch(process.env.NEXT_PUBLIC_BACKEND_URL as string , {
         method: "POST",
         headers: {
           "content-Type": "application/json",

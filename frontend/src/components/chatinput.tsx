@@ -41,6 +41,12 @@ export default function ChatInput({ control }: propType) {
           <div className="flex flex-col w-full py-2 flex-grow md:py-3 md:pl-4 relative border border-gray-900/50 text-white bg-gray-700 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.10)]">
             <textarea
               value={textBoxInput}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey){
+                  e.preventDefault();
+                  sendUserQuery(e as unknown as MouseEvent<HTMLButtonElement>)
+                }
+              }}
               tabIndex={0}
               data-id="root"
               placeholder="Send a message..."
@@ -49,7 +55,7 @@ export default function ChatInput({ control }: propType) {
             ></textarea>
             <button
               disabled={isLoading || processUserInput(textBoxInput)}
-              onClick={sendUserQuery}
+              onClick={(e) => sendUserQuery(e)}
               className="absolute p-1 rounded-md bottom-1.5 md:bottom-2.5 bg-transparent disabled:bg-gray-500 right-1 md:right-2 disabled:opacity-40"
             >
               <Send className="h-4 w-4 mr-1 text-white " />
