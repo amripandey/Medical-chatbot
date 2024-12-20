@@ -2,6 +2,8 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+
+import { setCookie } from "cookies-next";
 import Head from "next/head";
 
 import {
@@ -18,7 +20,7 @@ export default function SignUpPage() {
 
   const medicalConditions = [
     { value: "None", label: "None" },
-    { value: "Heart_Disease", label: "health Disease" },
+    { value: "Heart_Disease", label: "Health Disease" },
     { value: "Diabetes", label: "Diabetes" },
     { value: "High_Blood_Pressure", label: "High Blood Pressure" },
     { value: "Mental_Illness", label: "Mental Illness" },
@@ -29,15 +31,58 @@ export default function SignUpPage() {
 
     const formData = new FormData(event.currentTarget);
     const email = formData.get("email");
+    const fullname = formData.get("fullname");
     const password = formData.get("password");
+    const age = formData.get("age");
+    const gender = formData.get("gender");
+    const medicalHistory = formData.get("medicalHistory");
+    const currentMedications = formData.get("currentMedications");
+    const allergies = formData.get("allergies");
 
-    const response = await fetch("http://localhost:8000/api/v1/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    // let iterator = formData.entries();
+    // function* yieldFinal(iterator: any) {
+    //   let done, value;
+    //   do {
+    //     ({ done, value } = iterator.next());
+    //     yield value;
+    //   } while (!done);
+    // }
+
+    // const [
+    //   fullname,
+    //   email,
+    //   password,
+    //   age,
+    //   gender,
+    //   medicalHistory,
+    //   currentMedications,
+    //   allergies,
+    // ] = Array.from(yieldFinal(iterator));
+
+    const payload = {
+      email,
+      fullname,
+      age,
+      gender,
+      medicalHistory,
+      currentMedications,
+      allergies,
+      password,
+    };
+
+    const response = await fetch(
+      (process.env.NEXT_PUBLIC_BACKEND_URL as string) + "auth/register",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
 
     if (response.ok) {
+      const data = await response.json();
+      setCookie("access-token", data.access_token);
+      setCookie("token_type", data.token_type);
       router.push("/");
     } else {
       console.error(response);
@@ -64,6 +109,7 @@ export default function SignUpPage() {
               </label>
               <input
                 required
+                name="fullname"
                 type="text"
                 id="fullName"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -80,6 +126,7 @@ export default function SignUpPage() {
               </label>
               <input
                 required
+                name="email"
                 type="email"
                 id="email"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -95,6 +142,7 @@ export default function SignUpPage() {
                 Password
               </label>
               <input
+                name="password"
                 type="password"
                 id="password"
                 required
@@ -111,7 +159,7 @@ export default function SignUpPage() {
                 Age
               </label>
               <input
-                required
+                name="age"
                 type="number"
                 id="age"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -127,8 +175,7 @@ export default function SignUpPage() {
                 Gender
               </label>
               <select
-                required
-                name="Gender"
+                name="gender"
                 aria-placeholder="Select your gender"
                 id="gender"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -146,29 +193,38 @@ export default function SignUpPage() {
                 Medical History
               </label>
               <Select>
-                <SelectTrigger className="bg-white text-black">
-                  <SelectValue placeholder="Medical Condition" />
+                <SelectTrigger className="border-b-0">
+                  <SelectValue placeholder="Medical history" />
                 </SelectTrigger>
                 <SelectContent
-                  // onMouseDown={(e) => e.preventDefault()}
+                  className="border w-full bg-white text-black"
                   onClick={(e: any) => {
-                    const optionValue = e.target.textContent;
-                    if (selectMedCdn.includes(optionValue)) {
+                    const optionValue = e.target.value.replace(/_/g, " ");
+                    if (
+                      !selectMedCdn.includes(optionValue) &&
+                      !selectMedCdn.includes("None")
+                    ) {
+                      if (
+                        !(selectMedCdn.length == 0) &&
+                        optionValue == "None"
+                      ) {
+                        return;
+                      }
                       setSelectMedCdn([...selectMedCdn, optionValue]);
                     }
                   }}
-                  className="bg-white text-black"
                 >
                   {medicalConditions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                    <option key={option.value} value={option.value} className="cursor-pointer">
                       {option.label}
-                    </SelectItem>
+                    </option>
                   ))}
                 </SelectContent>
               </Select>
               <textarea
                 readOnly
-                value={selectMedCdn.map((i) => `${i} `)}
+                name="medicalHistory"
+                value={selectMedCdn.map((i) => i)}
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Describe your medical history"
               ></textarea>
@@ -181,7 +237,11 @@ export default function SignUpPage() {
               >
                 Current Medications
               </label>
+              <span className="m-0 p-0 text-sm text-slate-400">
+                seperate the each with coma
+              </span>
               <textarea
+                name="currentMedications"
                 id="currentMedications"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="List your current medications"
@@ -195,7 +255,11 @@ export default function SignUpPage() {
               >
                 Allergies
               </label>
+              <span className="m-0 p-0 text-sm text-slate-400">
+                seperate the each with coma
+              </span>
               <textarea
+                name="allergies"
                 id="allergies"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="List your allergies"

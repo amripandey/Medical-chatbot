@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Optional
 
 class QueryInput(BaseModel):
     prompt: str
@@ -14,9 +14,19 @@ class SignInRequest(BaseModel):
     password: str
     
 class SignUpRequest(BaseModel):
-    f_name: str
+    fullname: str 
     email: str
-    h_password: str
-    age: int
+    password: str
+    age: int | None = None
     gender: Literal["male", "female"]
+    medicalHistory: str | None = None
+    currentMedications: str | None = None
+    allergies: str | None = None
+    
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    
+class TokenData(BaseModel):
+    email: str | None = None
     

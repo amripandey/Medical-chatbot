@@ -54,7 +54,7 @@ export default function ChatInput({ control }: propType) {
               onChange={(e) => setTextBoxInput(e.target.value)}
             ></textarea>
             <button
-              disabled={isLoading || processUserInput(textBoxInput)}
+              disabled={!isLoading && processUserInput(textBoxInput)}
               onClick={(e) => sendUserQuery(e)}
               className="absolute p-1 rounded-md bottom-1.5 md:bottom-2.5 bg-transparent disabled:bg-gray-500 right-1 md:right-2 disabled:opacity-40"
             >

@@ -1,18 +1,20 @@
 import requests
 import json
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import StreamingResponse
 from langchain.prompts import PromptTemplate
-
 
 from pydantic_models import QueryInput
 from  config import settings
 # from Assistant.assistant import RAGApplication
 from langchain_utils import rag_chain
+from dependencies import get_current_user
 
 
-chat_router = APIRouter()
+chat_router = APIRouter(    
+    dependencies = [Depends(get_current_user)],
+)
 
 def prompt(question, documents):
     return f"""You are an medical assistant AI trained to assist with symptoms analysis.

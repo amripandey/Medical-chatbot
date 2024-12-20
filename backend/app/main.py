@@ -1,5 +1,5 @@
 from typing import Union
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from pydantic_models import QueryInput, QueryResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,7 +25,7 @@ app.include_router(
 
 app.include_router(
     chat_router,
-    prefix="/api/v1/chat"
+    prefix="/api/v1/chat",
 )
 
 @app.on_event("startup")

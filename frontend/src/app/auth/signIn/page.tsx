@@ -15,14 +15,19 @@ export default function LoginPage() {
     const email = formData.get("email");
     const password = formData.get("password");
 
-    const response = await fetch("http://localhost:9000/api/v1/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    const response = await fetch(
+      process.env.NEXT_PUBLIC_BACKEND_URL + "auth/login" as string,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }
+    );
 
     if (response.ok) {
-      setCookie("session", true);
+      const data = await response.json()
+      setCookie("access-token", data.access_token);
+      setCookie("token_type", data.token_type);
       router.push("/");
     } else {
       console.error(response);
@@ -48,6 +53,7 @@ export default function LoginPage() {
                 Email
               </label>
               <input
+                name="email"
                 type="email"
                 id="email"
                 required
@@ -63,6 +69,7 @@ export default function LoginPage() {
                 Password
               </label>
               <input
+                name="password"
                 type="password"
                 id="password"
                 required
@@ -79,7 +86,10 @@ export default function LoginPage() {
           </form>
           <p className="text-sm text-center text-gray-600 mt-4">
             Don&apos;t have an account?{" "}
-            <div onClick={() => router.push("/auth/register")} className="text-blue-500 hover:underline">
+            <div
+              onClick={() => router.push("/auth/register")}
+              className="text-blue-500 hover:underline"
+            >
               Sign Up
             </div>
           </p>
@@ -88,5 +98,3 @@ export default function LoginPage() {
     </>
   );
 }
-
-

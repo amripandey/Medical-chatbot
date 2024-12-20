@@ -43,13 +43,15 @@ export default function Home() {
   const currentMessageRef = useRef("");
   const latestChatId = () => crypto.randomUUID();
   const [openDialog, setOpenDialog] = useState<boolean>(false);
-  
-  // if(!hasCookie("session")){
+
+  // if(!hasCookie("access_token")){
   //   redirect("/auth/signIn"
   //   )
   // }
 
-  const sendUserQuery = (e: KeyboardEvent<HTMLTextAreaElement> | MouseEvent<HTMLButtonElement>) => {
+  const sendUserQuery = (
+    e: KeyboardEvent<HTMLTextAreaElement> | MouseEvent<HTMLButtonElement>
+  ) => {
     e.preventDefault();
 
     /*
@@ -78,7 +80,7 @@ export default function Home() {
     setTextBoxInput("");
 
     try {
-      fetch(process.env.NEXT_PUBLIC_BACKEND_URL as string , {
+      fetch(process.env.NEXT_PUBLIC_BACKEND_URL as string, {
         method: "POST",
         headers: {
           "content-Type": "application/json",
@@ -89,13 +91,14 @@ export default function Home() {
           prompt: textBoxInput,
         }),
       })
-        .then((res) => handleStreamResponse(res, botMessageId))
+        .then((res) => {
+          setIsLoading((prev) => false);
+          handleStreamResponse(res, botMessageId);
+        })
         .catch((error) => setErrorMessage("Problem with response"));
     } catch (error) {
       setErrorMessage("Failed to Fetch response");
     }
-
-    setIsLoading(false);
   };
 
   const handleStreamResponse = (response: Response, botMessageId: string) => {
