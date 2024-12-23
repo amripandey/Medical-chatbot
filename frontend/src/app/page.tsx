@@ -1,14 +1,9 @@
 "use client";
-import { hasCookie } from "cookies-next";
 
-import React, {
-  ChangeEvent,
-  MouseEvent,
-  KeyboardEvent,
-  useCallback,
-  useState,
-  useRef,
-} from "react";
+import { hasCookie } from "cookies-next";
+import React, { useState, useEffect } from "react";
+import { useImmer } from "use-immer";
+import { handleStreamResponse } from "@/lib/utils";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -25,7 +20,9 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-import ChatInput from "@/components/chatinput";
+import ChatInput from "@/components/ChatInput1";
+import ChatMessages from "@/components/ChatMessages";
+
 import MessageList from "@/components/message";
 import { redirect } from "next/navigation";
 
@@ -35,111 +32,80 @@ type conversationType = {
   role: string;
 };
 
-export default function Home() {
-  const [conversation, setConversation] = useState<conversationType[]>([]);
-  const [textBoxInput, setTextBoxInput] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState<string>();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const currentMessageRef = useRef("");
-  const latestChatId = () => crypto.randomUUID();
-  const [openDialog, setOpenDialog] = useState<boolean>(false);
+type messages = {
+  role: string;
+  content: string;
+  sources: string[];
+  loading: boolean;
+  error: boolean;
+};
 
-  // if(!hasCookie("access_token")){
-  //   redirect("/auth/signIn"
-  //   )
+export default function Home() {
+  const [chatId, setChatId] = useState(null);
+  const [messages, setMessages] = useImmer<messages[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+
+  const isLoading =
+    messages.length && messages[messages.length - 1].loading;
+
+  // if (!hasCookie("access_token")) {
+  //   redirect("/auth/signIn");
   // }
 
-  const sendUserQuery = (
-    e: KeyboardEvent<HTMLTextAreaElement> | MouseEvent<HTMLButtonElement>
-  ) => {
-    e.preventDefault();
+  ("use server");
+  async function sendChatMessage(message: any) {
+    const res = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "qwen2.5:0.5b",
+        stream: true,
+        prompt: message,
+      }),
+    });
+    if (!res.ok) {
+      return Promise.reject({ status: res.status, data: await res.json() });
+    }
+    return res.body;
+  }
 
-    /*
-    Step 1: Flip the loading to true
-    Step 2: Update the response of user in conversation array
-    Step 3: Fetch the data from ollama
-    Step 4: Create the output messageBox
-    Step 5: Stream the ollama response
-    Step 6: Clear textBoxInput value
-    */
-    setIsLoading((prev) => true);
+  ("use server");
+  async function submitNewMessage() {
+    const trimmedMessage = newMessage.trim();
+    if (!trimmedMessage || isLoading) return;
 
-    const userMessageId = latestChatId();
-    const botMessageId = latestChatId();
-
-    setConversation((prev) => [
-      ...prev,
-      { id: userMessageId, message: textBoxInput, role: "User" },
+    setMessages((draft) => [
+      ...draft,
+      { role: "user", content: trimmedMessage },
+      { role: "assistant", content: "", sources: [], loading: true },
     ]);
 
-    setConversation((prev) => [
-      ...prev,
-      { id: botMessageId, message: undefined, role: "Bot" },
-    ]);
-
-    setTextBoxInput("");
-
+    setNewMessage("");
     try {
-      fetch(process.env.NEXT_PUBLIC_BACKEND_URL as string, {
-        method: "POST",
-        headers: {
-          "content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "qwen2.5:0.5b",
-          stream: true,
-          prompt: textBoxInput,
-        }),
-      })
-        .then((res) => {
-          setIsLoading((prev) => false);
-          handleStreamResponse(res, botMessageId);
-        })
-        .catch((error) => setErrorMessage("Problem with response"));
-    } catch (error) {
-      setErrorMessage("Failed to Fetch response");
+      const stream = await sendChatMessage(trimmedMessage);
+      for await (const textChunk of handleStreamResponse(stream)) {
+        setMessages((draft) => {
+          draft[draft.length - 1].content += textChunk.response;
+        });
+      }
+      setMessages((draft) => {
+        draft[draft.length - 1].loading = false;
+      });
+    } catch (err) {
+      console.log(err);
+      setMessages((draft) => {
+        draft[draft.length - 1].loading = false;
+        draft[draft.length - 1].error = true;
+      });
     }
-  };
-
-  const handleStreamResponse = (response: Response, botMessageId: string) => {
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    currentMessageRef.current = "";
-
-    function processStream() {
-      reader
-        .read()
-        .then(({ done, value }: any) => {
-          if (done) {
-            setIsLoading(false);
-            return;
-          }
-
-          const chunk = decoder.decode(value);
-          const text_chunk = JSON.parse(chunk);
-          currentMessageRef.current += text_chunk.response;
-
-          setConversation((prev) =>
-            prev.map((msg) =>
-              msg.id === botMessageId
-                ? { ...msg, message: currentMessageRef.current }
-                : msg
-            )
-          );
-
-          processStream();
-        })
-        .catch((err) => setErrorMessage("Problem With Response Streaming"));
-    }
-    processStream();
-  };
+  }
 
   return (
     <>
-      <SidebarProvider>
+      <SidebarProvider className="">
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-14 shrink-0 items-center gap-2 bg-[#18191a]">
+          <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 bg-[#1e1f20]">
             <div className="flex flex-1 items-center gap-2 px-3">
               <SidebarTrigger />
               <Separator orientation="vertical" className="mr-2 h-4" />
@@ -154,35 +120,26 @@ export default function Home() {
               </Breadcrumb>
             </div>
           </header>
-
-          <div className="w-full h-[calc(100vh-3.5rem)] flex flex-1 flex-col gap-4 px-4 overflow-hidden bg-[#18191a]">
-            <div className="mx-auto h-[calc(100vh-10rem)] w-full max-w-3xl overflow-y-auto scrollbar-gutter-stable scroll-m-4">
-              {conversation.length > 0 ? (
-                <MessageList
-                  conversations={conversation}
-                  isLoading={isLoading}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <h1 className="text-2xl sm:text-4xl font-semibold text-center text-gray-200 gap-2">
-                    Health GPT
-                  </h1>
+          <div className="flex flex-1 flex-col">
+            <div className="relative grow flex flex-1 flex-col gap-6 pt-2">
+              {messages.length === 0 && (
+                <div className="mt-3 font-urbanist text-xl font-light space-y-2 text-center">
+                  <p>👋 Welcome!</p>
+                  <p>
+                    I am powered by the latest technology reports from fast and
+                    easy medical assistant.
+                  </p>
+                  <p>Please begin with placing the problem you are facing.</p>
                 </div>
               )}
+              <ChatMessages messages={messages} isLoading={isLoading} />
             </div>
-          </div>
-          <div className="sticky bottom-0 left-0 right-0 w-full px-4">
-            <div className="mx-auto max-w-3xl">
-              <ChatInput
-                control={{
-                  textBoxInput,
-                  setTextBoxInput,
-                  sendUserQuery,
-                  isLoading,
-                  errorMessage,
-                }}
-              />
-            </div>
+            <ChatInput
+              newMessage={newMessage}
+              isLoading={isLoading}
+              setNewMessage={setNewMessage}
+              submitNewMessage={submitNewMessage}
+            />
           </div>
         </SidebarInset>
       </SidebarProvider>

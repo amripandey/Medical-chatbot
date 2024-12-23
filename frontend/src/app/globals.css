@@ -1,9 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  box-sizing: border-box;
 }
 
 @layer utilities {
@@ -55,5 +59,55 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  ::-webkit-scrollbar {
+    @apply h-4 w-2;
+  }
+
+  ::-webkit-scrollbar:horizontal {
+    @apply h-4 w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent rounded;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-[#837d80cc] border rounded;
+  }
+}
+
+
+@layer components {
+  .spinner-child {
+    @apply absolute -top-1 left-0 h-full w-full content-[''] rounded-full bg-orange-400 opacity-0;
+  }
+
+  .markdown-container p {
+    @apply mb-5;
+  }
+
+  .markdown-container h1, h2, h3, h4, h5, h6 {
+    @apply font-bold mb-5;
+  }
+
+  .markdown-container li {
+    @apply mb-3;
+  }
+
+  .markdown-container li:last-child {
+    @apply mb-0;
+  }
+
+  .markdown-container ol {
+    @apply list-decimal mx-0 mt-0 mb-5 pl-8;
+  }
+
+  .markdown-container ul {
+    @apply list-disc mx-0 mt-0 mb-5 pl-8;
+  }
+
+  .markdown-container > :last-child {
+    @apply mb-0;
   }
 }
